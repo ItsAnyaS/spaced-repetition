@@ -1,0 +1,89 @@
+const express = require('express')
+const router = express.Router()
+const bcrypt = require('bcrypt');
+const { User} = require('../models')
+const jwt = require('jsonwebtoken');
+const JWT_SECRET_KEY = 'this is the secret key'
+
+
+const signToken = (user) => {
+    return jwt.sign({ exp: Math.floor(Date.now() / 1000) + (60 * 60), data: user.id}, JWT_SECRET_KEY);
+}
+ const decodeToken = (token) => {
+    return jwt.verify(token, JWT_SECRET_KEY)
+}
+
+
+router.get('/', async(req,res)=> {
+    let user = await User.findAll()
+    return res.json(user)
+})
+
+router.post('/signup', async(req,res) => {
+    let { username, password, name} = req.body
+    try {
+        let userExists = await User.findOne({where: {username}})
+        if (!userExists){
+        let encryptedPassword = await bcrypt.hash(password, 10)
+        let user = await User.create({username, password: encryptedPassword, name})
+            if (user){
+                return res.json({message: 'account successfully created', authToken: signToken(user)})
+            }else {
+                return res.json({message: 'Bad request'}).status(400)
+            }
+        }else {
+            return res.json({message: "A user with that name already exists"}).status(400)
+        }
+    }catch(err){
+        console.log(err)
+        return res.json(err)
+    }
+})
+
+router.get('/tap/:token', async(req, res)=> {
+    let token = req.params.token
+    try{
+        let decodedToken = decodeToken(token)
+        if (!decodedToken){
+            return res.json({message: "Not valid user"})
+        }
+        let id = decodedToken.data
+        let user = await User.findOne({where: {id: id}})
+        if (user){
+            return res.json({message: "valid user"}).status(200)
+        }else {
+            return res.json({message: "not valid user"}).status(400)
+        }
+    }catch(err){
+        console.log(err)
+        return res.json(err).status(500)
+    }
+})
+
+
+router.post('/login', async(req,res)=> {
+    let {username, password } = req.body
+    try{
+        let user = await  User.findOne({where: {username}})
+        if (user){
+            let decryptedPassword = await bcrypt.compare(password, user.password)
+            if (decryptedPassword){
+                let token = signToken(user)
+                console.log(token)
+                return res.json({
+                    authToken: token
+                })
+            }else {
+                return res.json({error: "Incorrect username or password"})
+            }
+        }else {
+            return res.json({error: "There is no user with this username"})
+        }
+    }catch(err){
+        console.log(err)
+        return res.json(err).status(500)
+    }
+})
+
+
+module.exports = router 

@@ -1,0 +1,220 @@
+const express = require('express')
+const router = express.Router()
+const cron = require('node-cron') 
+const bcrypt = require('bcrypt');
+const { User} = require('../models')
+const jwt = require('jsonwebtoken');
+const JWT_SECRET_KEY = 'this is the secret key'
+const { Op, where } = require('sequelize');
+const nodemailer = require('nodemailer')
+const {Topic} = require('../models')
+
+
+
+const signToken = (user) => {
+    return jwt.sign({ exp: Math.floor(Date.now() / 1000) + (60 * 60), data: user.id}, JWT_SECRET_KEY);
+}
+ const decodeToken = (token) => {
+    return jwt.verify(token, JWT_SECRET_KEY)
+}
+
+router.get('/topics', async(req,res)=> {
+    try {
+        let topics = await Topic.findAll()
+        return res.json({topics})
+    } catch (error) {
+        return res.json(error)
+    }
+    })
+
+router.get('/topics/:token', async(req,res)=> {
+
+    let token = req.params.token
+    try{
+        let decodedToken = decodeToken(token)
+        if (!decodedToken){
+            return res.json({message: "Not valid user"})
+        }
+
+        let id = decodedToken.data
+        let user = await User.findOne({where: {id: id}})
+        if (user){
+            let topics = await Topic.findAll({where: {userId: user.id}})
+            return res.json(topics)
+        }else {
+            return res.json({message: "not valid user"}).status(400)
+        }
+    }catch(err){
+        console.log(err)
+        return res.json(err).status(500)
+    }
+    })
+    
+    const sendEmail = async(topic) => {
+        
+        const html = `
+        <h1>Hey there!</h1>
+        <h2>Its time to review ${topic.subject}</h2>
+        <a target="_blank" href="${topic.link}">Click to Study</a>
+        `
+        const transporter = nodemailer.createTransport({
+            host:'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: 'anastasiazsirman@gmail.com',
+                pass: 'owqm nphe andy beqd'
+            }
+        });
+        
+        const info = await transporter.sendMail({
+            from: "Spaced Repetition <anastasiazsirman@gmail.com>",
+            to: "anyasirman@outlook.com",
+            subject: `Reminder to review ${topic.subject}`,
+            html: html
+        })
+    
+        console.log("Message sent" + info.messageId)
+        
+    }
+    
+    
+    
+    const scheduleEmail = (topic) => {
+        const now = new Date();
+        const reviewDate = new Date(topic.nextReviewDate);
+    
+        // Check if the next review date is in the future
+        if (reviewDate > now) {
+            const delayInMs = reviewDate.getTime() - now.getTime();
+    
+            setTimeout(async () => {
+                console.log(`Sending email reminder for topic: ${topic.subject}`);
+                await sendEmail(topic);
+    
+                // Update the topic's next review date for spaced repetition (example: add 1 day)
+                const nextReview = new Date(reviewDate);
+                nextReview.setMinutes(nextReview.getMinutes() + topic.interval); // Increment by interval
+                await Topic.update({ nextReviewDate: nextReview }, { where: { id: topic.id } });
+    
+                console.log(`Next review for ${topic.subject} scheduled on ${nextReview}`);
+            }, delayInMs);
+        } else {
+            console.log(`Review date for ${topic.subject} is in the past or now. No email scheduled.`);
+        }
+    };
+    
+    
+    
+    
+    
+    router.post('/create-topic', async(req, res)=> {
+        try {
+            const {subject, link, interval, lastReviewed, nextReviewDate, content, token} = req.body
+            let decodedToken = decodeToken(token)
+            if (!decodedToken){
+                return res.json({message: "Not valid user"})
+            }
+            let id = decodedToken.data
+            let user = await User.findOne({where: {id: id}})
+            if (user){
+                let topic = await Topic.create({subject, link, interval, lastReviewed, nextReviewDate, content, userId: id})
+                console.log(topic)
+                scheduleEmail(topic);
+                return res.json({ "subject": subject, "link": link, nextReviewDate: nextReviewDate})
+            }else {
+                return res.json({message: "not valid user"}).status(400)
+            }
+            
+        } catch (error) {
+            console.log(error)
+        }
+    })
+    
+    router.delete('/delete-topic/:id', async(req,res)=> {
+        try {
+            let id = req.params.id
+            console.log(id)
+            let topic = await Topic.destroy({where: {id: id}})
+            if (topic){
+                return res.json(topic)
+            }else {
+                return res.json({message: "error"}).status(400)
+            }
+        } catch (error) {
+            console.log(error)
+        }
+    })
+    
+    
+    
+    
+    
+    
+    cron.schedule("0 11 * * *", async () => {
+        console.log("Running daily reminder job...");
+    
+        const today = new Date();
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0); // Midnight
+        const endOfDay = new Date(today);
+        endOfDay.setHours(23, 59, 59, 999); // End of the day
+    
+        try {
+            // Fetch all topics due for review today
+            const topicsDueToday = await Topic.findAll({
+                where: {
+                    nextReviewDate: {
+                        [Op.between]: [startOfDay, endOfDay], // Today’s range
+                    },
+                },
+            });
+    
+            if (topicsDueToday.length > 0) {
+                console.log("Topics to review today:", topicsDueToday);
+    
+                // Generate the email content
+                const emailContent = topicsDueToday
+                    .map(
+                        (topic) =>
+                            `<li><a href="${topic.link}">${topic.subject}</a> (Review Date: ${topic.nextReviewDate})</li>`
+                    )
+                    .join("");
+    
+                const html = `
+                    <h1>Daily Review Reminder</h1>
+                    <p>Here are the topics you need to review today:</p>
+                    <ul>${emailContent}</ul>
+                `;
+    
+                // Send the email
+                const transporter = nodemailer.createTransport({
+                    host: "smtp.gmail.com",
+                    port: 465,
+                    secure: true,
+                    auth: {
+                        user: "anastasiazsirman@gmail.com",
+                        pass: "owqm nphe andy beqd", // Replace with an app password
+                    },
+                });
+    
+                await transporter.sendMail({
+                    from: "Spaced Repetition <anastasiazsirman@gmail.com>",
+                    to: "anyasirman@outlook.com",
+                    subject: "Your Daily Review Reminder",
+                    html: html,
+                });
+    
+                console.log("Daily review email sent!");
+            } else {
+                console.log("No topics to review today.");
+            }
+        } catch (error) {
+            console.error("Error running daily reminder job:", error);
+        }
+    });
+
+    module.exports = router 
+    
+    
+    
