@@ -12,6 +12,8 @@ function App() {
   const [name, setName] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
+  const [emailAppPassword, setEmailAppPassword] = useState('')
   const [isLoggedIn, setIsLoggedIn] = useState('false')
 
   const handleSubmit = async(e) => {
@@ -123,13 +125,17 @@ function App() {
         {
           username: username,
           password: password,
-          name: name
+          name: name,
+          email: email,
+          emailAppPassword: emailAppPassword
         }
       )
     })
     setName('')
     setPassword('')
     setUsername('')
+    setEmailAppPassword('')
+    setEmail('')
     let res = await req.json()
     console.log(res)
   }
@@ -152,7 +158,11 @@ function App() {
       let req = await fetch(`http://localhost:4000/topics/topics/${user}`)
       let res = await req.json()
       console.log('FIRE')
-      setTopics(res);
+      console.log(res)
+      if (res.message === 'jwt expired'){
+      }else{
+        setTopics(res);
+      }
     }
   }
 
@@ -181,10 +191,12 @@ function App() {
           </form>
         </div>}
         { isLoggedIn !== 'true' && isLoggedIn !== 'login' && <div id="login-model">
-          <form id="login-form" onSubmit={handleSignUp}>
+          <form id="signup-form" onSubmit={handleSignUp}>
             <h1>Sign Up</h1>
             <input placeholder='Name' value={name} onChange={(e)=> {setName(e.target.value)}} type="text" id="signup-name-field" />
             <input placeholder='Username' value={username} onChange={(e)=> {setUsername(e.target.value)}} type="text" id="signup-username-field" />
+            <input type="text" value={email} placeholder='Email' onChange={(e)=>{setEmail(e.target.value)}} />
+            <input type="text" value={emailAppPassword} placeholder='Email app password' onChange={(e)=>{setEmailAppPassword(e.target.value)}} />
             <input placeholder="Password" value={password} onChange={(e)=> {setPassword(e.target.value)}} type="password" id="signup-password-field" />
             <button>Login</button>
             <p onClick={()=> {setIsLoggedIn('login')}}>Login</p>
@@ -221,13 +233,19 @@ function App() {
         </form>
       </section >
       <section id='topic-container'>
-      <ul   id='topic-list'>
+      <ul id='topic-list'>
         {topics.map((topic) => (
           <div className='topic-list-item' key={topic.id}>
-            <h1>{topic.subject}</h1>
-            <h3>{topic.content}</h3>
-            <a target="_blank" href={topic.link}>Link to Topic</a>
-            <h3>{`Study again on ${formatDate(topic.nextReviewDate)}`}</h3>
+              <div className="review-container">
+                <div className="top-container">
+                 <h1>{`${topic.subject}: `}</h1>
+                 <h3>{topic.content}</h3>
+              </div>
+              <div className="bottom-container">
+              <h3>{`Study again on ${formatDate(topic.nextReviewDate)}`}</h3>
+                <a target="_blank" href={topic.link}>Link to Topic</a>
+              </div>
+            </div>
             <button onClick={()=>handleDeleteTopic(topic.id)} id="delete-topic">Delete</button>
           </div>
         ))}

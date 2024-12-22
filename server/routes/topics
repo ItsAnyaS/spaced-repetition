@@ -50,7 +50,7 @@ router.get('/topics/:token', async(req,res)=> {
     }
     })
     
-    const sendEmail = async(topic) => {
+    const sendEmail = async(topic, user) => {
         
         const html = `
         <h1>Hey there!</h1>
@@ -62,8 +62,8 @@ router.get('/topics/:token', async(req,res)=> {
             port: 465,
             secure: true,
             auth: {
-                user: 'anastasiazsirman@gmail.com',
-                pass: 'owqm nphe andy beqd'
+                user: user.email,
+                pass: user.emailAppPassword
             }
         });
         
@@ -80,7 +80,7 @@ router.get('/topics/:token', async(req,res)=> {
     
     
     
-    const scheduleEmail = (topic) => {
+    const scheduleEmail = (topic, user) => {
         const now = new Date();
         const reviewDate = new Date(topic.nextReviewDate);
     
@@ -90,9 +90,7 @@ router.get('/topics/:token', async(req,res)=> {
     
             setTimeout(async () => {
                 console.log(`Sending email reminder for topic: ${topic.subject}`);
-                await sendEmail(topic);
-    
-                // Update the topic's next review date for spaced repetition (example: add 1 day)
+                await sendEmail(topic, user);
                 const nextReview = new Date(reviewDate);
                 nextReview.setMinutes(nextReview.getMinutes() + topic.interval); // Increment by interval
                 await Topic.update({ nextReviewDate: nextReview }, { where: { id: topic.id } });
@@ -119,8 +117,7 @@ router.get('/topics/:token', async(req,res)=> {
             let user = await User.findOne({where: {id: id}})
             if (user){
                 let topic = await Topic.create({subject, link, interval, lastReviewed, nextReviewDate, content, userId: id})
-                console.log(topic)
-                scheduleEmail(topic);
+                // scheduleEmail(topic, user);
                 return res.json({ "subject": subject, "link": link, nextReviewDate: nextReviewDate})
             }else {
                 return res.json({message: "not valid user"}).status(400)
@@ -147,10 +144,34 @@ router.get('/topics/:token', async(req,res)=> {
     })
     
     
+    const calculateNextInterval = (interval) => {
+        if (interval === 1) {
+            return 2
+        }else if (interval === 2){
+            return 3
+        } else if (interval ===3){
+            return 4
+        }else if (interval >= 4){
+            return 5
+        }
+    }
+
+    const calculateNextDate = (interval) => {
+        if (interval === 1){
+            return 1
+        }else if (interval === 2){
+            return 2
+        } else if (interval === 3){
+            return 3
+        }else if (interval ===4){
+            return 10
+        }else if (interval > 4){
+            return 21
+        }
+    }
     
     
-    
-    
+
     cron.schedule("0 11 * * *", async () => {
         console.log("Running daily reminder job...");
     
@@ -161,58 +182,78 @@ router.get('/topics/:token', async(req,res)=> {
         endOfDay.setHours(23, 59, 59, 999); // End of the day
     
         try {
-            // Fetch all topics due for review today
-            const topicsDueToday = await Topic.findAll({
-                where: {
-                    nextReviewDate: {
-                        [Op.between]: [startOfDay, endOfDay], // Today’s range
-                    },
-                },
-            });
+            // Fetch all users from the database
+            const users = await User.findAll();
     
-            if (topicsDueToday.length > 0) {
-                console.log("Topics to review today:", topicsDueToday);
+            for (const user of users) {
+                if (!user.email || !user.emailAppPassword) {
+                    console.log(`Skipping user with ID ${user.id} due to missing email or app password.`);
+                    continue;
+                }
     
-                // Generate the email content
-                const emailContent = topicsDueToday
-                    .map(
-                        (topic) =>
-                            `<li><a href="${topic.link}">${topic.subject}</a> (Review Date: ${topic.nextReviewDate})</li>`
-                    )
-                    .join("");
-    
-                const html = `
-                    <h1>Daily Review Reminder</h1>
-                    <p>Here are the topics you need to review today:</p>
-                    <ul>${emailContent}</ul>
-                `;
-    
-                // Send the email
-                const transporter = nodemailer.createTransport({
-                    host: "smtp.gmail.com",
-                    port: 465,
-                    secure: true,
-                    auth: {
-                        user: "anastasiazsirman@gmail.com",
-                        pass: "owqm nphe andy beqd", // Replace with an app password
+                // Fetch topics due for review for this user
+                const topicsDueToday = await Topic.findAll({
+                    where: {
+                        nextReviewDate: {
+                            [Op.between]: [startOfDay, endOfDay], // Today’s range
+                        },
+                        userId: user.id, // Assuming each topic is associated with a user
                     },
                 });
     
-                await transporter.sendMail({
-                    from: "Spaced Repetition <anastasiazsirman@gmail.com>",
-                    to: "anyasirman@outlook.com",
-                    subject: "Your Daily Review Reminder",
-                    html: html,
-                });
+                if (topicsDueToday.length > 0) {
+                    console.log(`Topics to review today for user ${user.id}:`, topicsDueToday);
+                    
+
+                    function formatDate(dateTime) {
+                        const date = new Date(dateTime);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                    
+                        return `${month}/${day}`;
+                    }
+                    // Generate the email content
+                    const emailContent = topicsDueToday
+                        .map(
+                            (topic) =>
+                                `<li><a href="${topic.link}">${topic.subject}</a> (Review Date: ${formatDate(topic.nextReviewDate)})</li>`
+                        )
+                        .join("");
     
-                console.log("Daily review email sent!");
-            } else {
-                console.log("No topics to review today.");
+                    const html = `
+                        <h1>Daily Review Reminder</h1>
+                        <p>Here are the topics you need to review today:</p>
+                        <ul>${emailContent}</ul>
+                    `;
+    
+                    // Send the email
+                    const transporter = nodemailer.createTransport({
+                        host: "smtp.gmail.com",
+                        port: 465,
+                        secure: true,
+                        auth: {
+                            user: user.email,
+                            pass: user.emailAppPassword, // Use user's app password
+                        },
+                    });
+    
+                    await transporter.sendMail({
+                        from: `Spaced Repetition <${user.email}>`,
+                        to: user.email, // Send email to the user
+                        subject: "Your Daily Review Reminder",
+                        html: html,
+                    });
+    
+                    console.log(`Daily review email sent to ${user.email}`);
+                } else {
+                    console.log(`No topics to review today for user ${user.id}`);
+                }
             }
         } catch (error) {
             console.error("Error running daily reminder job:", error);
         }
     });
+    
 
     module.exports = router 
     

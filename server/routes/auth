@@ -20,12 +20,13 @@ router.get('/', async(req,res)=> {
 })
 
 router.post('/signup', async(req,res) => {
-    let { username, password, name} = req.body
+    let { username, password, name, email, emailAppPassword} = req.body
     try {
         let userExists = await User.findOne({where: {username}})
-        if (!userExists){
+        let emailInUse = await User.findOne({where: {email}})
+        if (!userExists && !emailInUse){
         let encryptedPassword = await bcrypt.hash(password, 10)
-        let user = await User.create({username, password: encryptedPassword, name})
+        let user = await User.create({username, password: encryptedPassword, name, email, emailAppPassword})
             if (user){
                 return res.json({message: 'account successfully created', authToken: signToken(user)})
             }else {
@@ -58,6 +59,12 @@ router.get('/tap/:token', async(req, res)=> {
         console.log(err)
         return res.json(err).status(500)
     }
+})
+
+router.delete('/delete/:id', async(req,res)=> {
+    let {id} = req.params.id
+    let user = await User.destroy({where: {id}})
+    return res.json(user)
 })
 
 
