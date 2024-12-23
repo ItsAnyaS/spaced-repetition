@@ -27,8 +27,8 @@ router.get('/topics', async(req,res)=> {
     }
     })
 
-router.get('/topics/:token', async(req,res)=> {
-
+router.get('/:token', async(req,res)=> {
+    console.log('here')
     let token = req.params.token
     try{
         let decodedToken = decodeToken(token)

@@ -1,16 +1,38 @@
 const express = require('express')
 const { sequelize } = require('./models')
 const cors = require('cors')
+require('dotenv/config')
 const app = express()
+const PORT = process.env.PORT || 4000
+const path = require('path')
 app.use(express.json())
 app.use(cors())
 
+
+
+
+
 const topicRouter = require('./routes/topics')
 const authRouter = require('./routes/auth')
-app.use('/topics', topicRouter)
-app.use('/auth', authRouter)
 
-app.listen(4000, async() => {
+app.use('/api/topics', topicRouter)
+app.use('/api/auth', authRouter)
+
+
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.resolve(__dirname, '../client/build')));
+
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
+    });
+}
+
+console.log('Serving static files from:', path.join(__dirname, 'client/build'));
+
+
+app.listen(PORT, async() => {
     console.log('server is up')
     await sequelize.authenticate()
     console.log('database connected')

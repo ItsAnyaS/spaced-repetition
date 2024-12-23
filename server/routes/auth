@@ -70,6 +70,7 @@ router.delete('/delete/:id', async(req,res)=> {
 
 router.post('/login', async(req,res)=> {
     let {username, password } = req.body
+    console.log(username)
     try{
         let user = await  User.findOne({where: {username}})
         if (user){
