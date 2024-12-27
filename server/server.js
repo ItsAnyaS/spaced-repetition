@@ -6,10 +6,10 @@ const app = express()
 const PORT = process.env.PORT || 4000
 const path = require('path')
 app.use(express.json())
-    app.use(cors({
-        origin: 'https://spaced-repetition-883p.onrender.com'
-      }));
-
+    // app.use(cors({
+    //     origin: 'https://spaced-repetition-883p.onrender.com'
+    //   }));
+app.use(cors())
 
 
 
