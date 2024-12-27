@@ -18,7 +18,7 @@
     "client": "npm run start --prefix client",
     "build": "npm run build --prefix client",
     "dev": "concurrently \"npm run start\" \"npm run client\"",
-    "migrate": "npx sequelize db:migrate"
+    "migrate": " npx sequelize init && npx sequelize db:migrate"
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.2"
