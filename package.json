@@ -12,12 +12,15 @@
     "sequelize": "^6.37.5",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
-  },"scripts": {
-    "start": "node ./server/server.js",   
-    "client": "npm run start --prefix client", 
-    "build": "npm run build --prefix client", 
+  },
+  "scripts": {
+    "start": "node ./server/server.js",
+    "client": "npm run start --prefix client",
+    "build": "npm run build --prefix client",
     "dev": "concurrently \"npm run start\" \"npm run client\"",
-    "migrate": "sequelize db:migrate"
+    "migrate": "npx sequelize db:migrate"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.2"
   }
-  
 }
