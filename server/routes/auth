@@ -21,6 +21,7 @@ router.get('/', async(req,res)=> {
 
 router.post('/signup', async(req,res) => {
     let { username, password, name, email, emailAppPassword} = req.body
+    console.log(req.body)
     try {
         let userExists = await User.findOne({where: {username}})
         let emailInUse = await User.findOne({where: {email}})
@@ -36,7 +37,7 @@ router.post('/signup', async(req,res) => {
             return res.json({message: "A user with that name already exists"}).status(400)
         }
     }catch(err){
-        console.log(err)
+        console.log({"This is an error:": err})
         return res.json(err)
     }
 })
