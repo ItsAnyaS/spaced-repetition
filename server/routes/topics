@@ -204,6 +204,10 @@ router.get('/:token', async(req,res)=> {
                 if (topicsDueToday.length > 0) {
                     console.log(`Topics to review today for user ${user.id}:`, topicsDueToday);
                     
+                    topicsDueToday.forEach(async(topic)=> {
+                        let updatedTopic = await Topic.update({nextReviewDate: calculateNextDate(topic.interval), where: topic.id})
+                        updatedTopic = await Topic.update({interval: calculateNextInterval(topic.interval), where: topic.id})
+                    })
 
                     function formatDate(dateTime) {
                         const date = new Date(dateTime);
