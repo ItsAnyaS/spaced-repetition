@@ -59,8 +59,8 @@
 
 
 #login-form{
-    background-color: #B3DDC4;
-    height: 300px;
+    background-color:#ddddff;
+    height: 400px;
     width: 300px;
     border-radius: 20px;
     padding: 20px;
@@ -83,19 +83,20 @@
 }
 
 #login-form button {
-    height: 40px;
+    height: 50px;
     width: 250px;
     border: none;
     border-radius: 12px;
-    background-color: #9CA3D6;
-    color: antiquewhite;
+    background-color: #aaaafe;
     font-weight: 500;
+    cursor: pointer;
+    font-size: 16px;
 }
 
 
 #signup-form{
-    background-color: #B3DDC4;
-    height: 500px;
+    background-color: #ddddff;
+    height: 550px;
     width: 400px;
     border-radius: 20px;
     padding: 20px;
@@ -120,9 +121,17 @@
     width: 250px;
     border: none;
     border-radius: 12px;
-    background-color: #9CA3D6;
-    color: antiquewhite;
+    background-color: #aaaafe;
     font-weight: 500;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#signup-form a {
+    cursor: pointer;
+}
+#login-form a {
+    cursor: pointer;
 }
 
 
@@ -134,7 +143,7 @@
     display: flex;
     width: 75%;
     height: 300px;
-    background-color: #B3DDC4;
+    background-color: #aaaafe;
     border-radius: 12px;
     padding: 25px;
     gap: 10px;
@@ -149,7 +158,7 @@
     width: 250px;
     border-radius: 12px;
     border: none;
-    background-color: antiquewhite;
+    background-color: #eeeeff;
     padding: 5px;
 }
 
@@ -159,7 +168,8 @@
     border-radius: 12px;
     font-weight: 500;
     border: none;
-    background-color: antiquewhite;
+    background-color: #eeeeff;
+    cursor: pointer;
 }
 
 #topic-container{

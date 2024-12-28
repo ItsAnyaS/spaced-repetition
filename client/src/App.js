@@ -202,7 +202,7 @@ function App() {
             <input type="text" value={email} placeholder='Email' onChange={(e)=>{setEmail(e.target.value)}} />
             <input type="text" value={emailAppPassword} placeholder='Email app password' onChange={(e)=>{setEmailAppPassword(e.target.value)}} />
             <input placeholder="Password" value={password} onChange={(e)=> {setPassword(e.target.value)}} type="password" id="signup-password-field" />
-            <button>Login</button>
+            <button>Sign Up</button>
             <p onClick={()=> {setIsLoggedIn('login')}}>Login</p>
           </form>
         </div>}
