@@ -21,7 +21,7 @@ function App() {
     e.preventDefault()
     const lastReviewed = new Date()
     if (topicToAdd !== '' && linkToTopic !== ''){
-      let req = await fetch('https://spaced-repetition-backend.onrender.com/api/topics/create-topic', {
+      let req = await fetch('/api/topics/create-topic', {
         method: 'POST',
         headers: {"Content-type": "application/json"},
         body: JSON.stringify({
@@ -59,7 +59,7 @@ function App() {
 
   const handleDeleteTopic = async (id) => {
     try {
-      let req = await fetch(`https://spaced-repetition-backend.onrender.com/api/topics/delete-topic/${id}`, {
+      let req = await fetch(`/api/topics/delete-topic/${id}`, {
         method: "DELETE",
         headers: {"Content-type": "application/json"}
       })
@@ -91,7 +91,7 @@ function App() {
 
   const handleLogin = async(e) => {
     e.preventDefault()
-    let req = await fetch('https://spaced-repetition-backend.onrender.com/api/auth/login', {
+    let req = await fetch('api/auth/login', {
       method: "POST",
       headers: {"Content-type": "application/json"},
       body: JSON.stringify(
@@ -116,7 +116,7 @@ function App() {
 
   const handleSignUp = async(e) => {
     e.preventDefault()
-    let req = await fetch('https://spaced-repetition-backend.onrender.com/api/auth/signup',{
+    let req = await fetch('/api/auth/signup',{
       method: "POST",
       headers: {"Content-type": "application/json"},
       body: JSON.stringify(
@@ -147,7 +147,7 @@ function App() {
 
   const handleIsUserLoggedIn = async() => {
     let user = Cookies.get('auth-token')
-    let req = await fetch(`https://spaced-repetition-backend.onrender.com/api/auth/tap/${user}`)
+    let req = await fetch(`/api/auth/tap/${user}`)
     let res = await req.json()
     if (res.message === "valid user"){
       setIsLoggedIn('true')
@@ -160,10 +160,10 @@ function App() {
   const getTopics = async() => {
     let user = Cookies.get('auth-token')
     if (user){
-      let req = await fetch(`https://spaced-repetition-backend.onrender.com/api/topics/${user}`)
+      let req = await fetch(`/api/topics/${user}`)
       let res = await req.json()
       console.log(res)
-      if (res.message === 'jwt expired'){
+      if (res.message === 'jwt expired' || res.message === 'not valid user'){
       }else{
         setTopics(res);
       }
