@@ -163,7 +163,8 @@ function App() {
       let req = await fetch(`https://spaced-repetition-backend.onrender.com/api/topics/${user}`)
       let res = await req.json()
       console.log(res)
-      if (res.message === 'jwt expired' || res.message === 'invalid user'){
+      if (res.message === 'jwt expired' || res.message === 'invalid user' || res.message === 'jwt malformed'){
+        Cookies.remove('auth-token')
       }else{
         setTopics(res);
       }
