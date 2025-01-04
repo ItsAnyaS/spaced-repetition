@@ -46,8 +46,7 @@ function App() {
   const calcNextReviewDate = () => {
     const today = new Date();
     const nextReviewDate = new Date(today);
-    nextReviewDate.setDate(nextReviewDate.getDate()); 
-    // nextReviewDate.setDate(nextReviewDate.getDate() + 1); 
+    nextReviewDate.setDate(nextReviewDate.getDate() + 1); 
     return nextReviewDate;
   }
   
